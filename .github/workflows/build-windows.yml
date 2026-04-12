@@ -23,7 +23,7 @@ jobs:
           node-version: '20'
 
       - name: Install npm deps
-        run: npm ci
+        run: npm install
 
       - name: Build Tauri
         uses: tauri-apps/tauri-action@v0

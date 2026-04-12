@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/formseal/formseal-sync/cmd/formseal-sync/providers/cloudflare"
-	"github.com/formseal/formseal-sync/cmd/formseal-sync/providers/supabase"
+	"github.com/formseal/formseal-sync/providers/cloudflare"
+	"github.com/formseal/formseal-sync/providers/supabase"
 	"github.com/lxn/walk"
 	. "github.com/lxn/walk/declarative"
 )

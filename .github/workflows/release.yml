@@ -16,19 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          go-version: '1.21'
+          python-version: '3.11'
 
-      - name: Build
-        run: go build -ldflags "-s -w" -o formseal-sync.exe .
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Build standalone exe
+        run: |
+          pip install pyinstaller
+          pyinstaller --onefile --name formseal-sync cli/fscl.py --collect-all commands --hidden-import requests
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            formseal-sync.exe
+            dist/formseal-sync.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

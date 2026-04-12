@@ -22,7 +22,7 @@ jobs:
           go-version: '1.21'
 
       - name: Download dependencies
-        run: go mod tidy
+        run: go get github.com/lxn/walk@v0.0.0-20210112085537-c389da54e794
 
       - name: Build
         run: go build -ldflags "-s -w" -o formseal-sync.exe .

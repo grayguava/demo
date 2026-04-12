@@ -11,18 +11,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            ext: .exe
-          - os: ubuntu-22.04
-            ext: ""
-          - os: macos-latest
-            ext: ""
-
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +22,13 @@ jobs:
           go-version: '1.21'
 
       - name: Build
-        run: go build -ldflags "-s -w" -o formseal-sync${{ matrix.ext }} .
+        run: go build -ldflags "-s -w" -o formseal-sync.exe .
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            formseal-sync${{ matrix.ext }}
+            formseal-sync.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

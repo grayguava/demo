@@ -1,56 +1,16 @@
-name: Release
+// providers/supabase/account.rs
+use reqwest::blocking::Client;
 
-on:
-  push:
-    branches:
-      - main
+pub fn validate_token(url: &str, key: &str) -> Result<bool, String> {
+    let client = Client::new();
+    let fetch_url = format!("{}/rest/v1/", url);
 
-jobs:
-  tag:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.bump.outputs.tag }}
+    let resp = client
+        .get(&fetch_url)
+        .header("Authorization", format!("Bearer {}", key))
+        .header("apikey", key)
+        .send()
+        .map_err(|e| e.to_string())?;
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Bump patch version tag
-        id: bump
-        run: |
-          LATEST=$(git tag --sort=-v:refname | grep '^v' | head -n1)
-          if [ -z "$LATEST" ]; then
-            NEW="v1.0.0"
-          else
-            MAJOR=$(echo $LATEST | cut -d. -f1 | tr -d v)
-            MINOR=$(echo $LATEST | cut -d. -f2)
-            PATCH=$(echo $LATEST | cut -d. -f3)
-            NEW="v$MAJOR.$MINOR.$((PATCH+1))"
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag $NEW
-          git push origin $NEW
-          echo "tag=$NEW" >> $GITHUB_OUTPUT
-
-  build-windows:
-    needs: tag
-    uses: ./.github/workflows/build-windows.yml
-    with:
-      tag: ${{ needs.tag.outputs.tag }}
-    secrets: inherit
-
-  build-macos:
-    needs: tag
-    uses: ./.github/workflows/build-macos.yml
-    with:
-      tag: ${{ needs.tag.outputs.tag }}
-    secrets: inherit
-
-  build-linux:
-    needs: tag
-    uses: ./.github/workflows/build-linux.yml
-    with:
-      tag: ${{ needs.tag.outputs.tag }}
-    secrets: inherit
+    Ok(resp.status().is_success())
+}

@@ -1,0 +1,40 @@
+{
+  "productName": "formseal-sync",
+  "version": "1.0.0",
+  "identifier": "com.formseal.sync",
+  "build": {
+    "frontendDist": "../src",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devtools": true
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "formseal-sync",
+        "width": 420,
+        "height": 580,
+        "resizable": false,
+        "decorations": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": [
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "dialog": {},
+    "shell": {
+      "open": true
+    }
+  }
+}

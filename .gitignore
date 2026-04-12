@@ -1,8 +1,22 @@
-node_modules/
-dist/
-src-tauri/target/
-src-tauri/release/
-src-tauri/debug/
-*.log
+# Build output
+*.exe
+*.dll
+*.so
+*.dylib
+formseal-sync
+
+# Go
+vendor/
+*.test
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
+*.log

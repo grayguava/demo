@@ -1,7 +1,7 @@
 mod config;
 mod providers;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
 
@@ -14,22 +14,6 @@ struct FetchResult {
 #[derive(Serialize)]
 struct StatsResult {
     total: usize,
-}
-
-#[derive(Deserialize)]
-struct SaveConfigArgs {
-    provider: String,
-    #[serde(default)]
-    cloudflare_token: String,
-    #[serde(default)]
-    cloudflare_namespace: String,
-    #[serde(default)]
-    supabase_url: String,
-    #[serde(default)]
-    supabase_key: String,
-    #[serde(default)]
-    supabase_table: Option<String>,
-    output_folder: String,
 }
 
 #[tauri::command]
@@ -62,7 +46,7 @@ fn save_config(
         },
         output_folder,
     };
-    config::save(&cfg).map_err(|e| e.to_string())
+    config::save(&cfg).map_err(|e: anyhow::Error| e.to_string())
 }
 
 #[tauri::command]
@@ -83,13 +67,10 @@ fn fetch_ciphertexts() -> Result<FetchResult, String> {
             if cfg.cloudflare.namespace.is_empty() {
                 return Err("KV Namespace ID not set. Go to Settings.".to_string());
             }
-
-            // Get account ID
             let account_id = providers::cloudflare::get_account_id(&cfg.cloudflare.token)
                 .map_err(|e| e.to_string())?;
-
             providers::cloudflare::fetch(&cfg.cloudflare, &account_id, &output_path)
-                .map_err(|e| e.to_string())?
+                .map_err(|e: anyhow::Error| e.to_string())?
         }
         "supabase" => {
             if cfg.supabase.url.is_empty() {
@@ -98,12 +79,10 @@ fn fetch_ciphertexts() -> Result<FetchResult, String> {
             if cfg.supabase.key.is_empty() {
                 return Err("Supabase key not set. Go to Settings.".to_string());
             }
-
-            providers::supabase::fetch(&cfg.supabase, &output_path).map_err(|e| e.to_string())?
+            providers::supabase::fetch(&cfg.supabase, &output_path)
+                .map_err(|e: anyhow::Error| e.to_string())?
         }
-        _ => {
-            return Err("No provider set. Go to Settings.".to_string());
-        }
+        _ => return Err("No provider set. Go to Settings.".to_string()),
     };
 
     Ok(FetchResult {
@@ -118,18 +97,15 @@ fn get_stats() -> StatsResult {
     if cfg.output_folder.is_empty() {
         return StatsResult { total: 0 };
     }
-
     let path = PathBuf::from(&cfg.output_folder).join("ciphertexts.jsonl");
     if !path.exists() {
         return StatsResult { total: 0 };
     }
-
     let total = fs::read_to_string(&path)
         .unwrap_or_default()
         .lines()
         .filter(|l| !l.trim().is_empty())
         .count();
-
     StatsResult { total }
 }
 

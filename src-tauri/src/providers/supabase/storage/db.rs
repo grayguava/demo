@@ -1,6 +1,4 @@
 // providers/supabase/storage/db.rs
-// Supabase database storage adapter
-
 use anyhow::{anyhow, Result};
 use reqwest::blocking::Client;
 use serde::Deserialize;
@@ -38,7 +36,6 @@ pub fn fetch(cfg: &ProviderConfig, output_path: &PathBuf) -> Result<FetchResult>
 
     let table = cfg.table.as_deref().unwrap_or("ciphertexts");
     let client = Client::new();
-
     let url = format!("{}/rest/v1/{}?select=data", cfg.url, table);
 
     let resp = client
@@ -48,11 +45,7 @@ pub fn fetch(cfg: &ProviderConfig, output_path: &PathBuf) -> Result<FetchResult>
         .send()?;
 
     if !resp.status().is_success() {
-        return Err(anyhow!(
-            "HTTP {}: {}",
-            resp.status(),
-            resp.text().unwrap_or_default()
-        ));
+        return Err(anyhow!("HTTP {}: {}", resp.status(), resp.text().unwrap_or_default()));
     }
 
     #[derive(Deserialize)]
@@ -60,15 +53,11 @@ pub fn fetch(cfg: &ProviderConfig, output_path: &PathBuf) -> Result<FetchResult>
         data: Option<String>,
     }
 
-    let rows: Vec<Row> = resp.json().map_err(|e| e.to_string())?;
+    let rows: Vec<Row> = resp.json()?;
 
     fs::create_dir_all(output_path.parent().unwrap())?;
     let mut seen = load_seen(output_path);
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(output_path)?;
+    let mut file = OpenOptions::new().create(true).append(true).open(output_path)?;
 
     let mut written = 0;
     let mut skipped = 0;
@@ -76,13 +65,8 @@ pub fn fetch(cfg: &ProviderConfig, output_path: &PathBuf) -> Result<FetchResult>
     for row in rows {
         if let Some(value) = row.data {
             let value = value.trim().to_string();
-            if value.is_empty() {
-                continue;
-            }
-            if seen.contains(&value) {
-                skipped += 1;
-                continue;
-            }
+            if value.is_empty() { continue; }
+            if seen.contains(&value) { skipped += 1; continue; }
             writeln!(file, "{}", value)?;
             seen.insert(value);
             written += 1;

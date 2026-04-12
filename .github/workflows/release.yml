@@ -1,50 +1,60 @@
-name: Build
+name: Release
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
-jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-          - platform: macos-latest
-          - platform: ubuntu-22.04
+permissions:
+  contents: write
 
-    runs-on: ${{ matrix.platform }}
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bump.outputs.tag }}
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          fetch-depth: 0
 
-      - name: Install Linux deps
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Bump patch version tag
+        id: bump
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf
+          LATEST=$(git tag --sort=-v:refname | grep "^v" | head -n1)
+          if [ -z "$LATEST" ]; then
+            NEW="v1.0.0"
+          else
+            MAJOR=$(echo $LATEST | cut -d. -f1 | tr -d v)
+            MINOR=$(echo $LATEST | cut -d. -f2)
+            PATCH=$(echo $LATEST | cut -d. -f3)
+            NEW="v$MAJOR.$MINOR.$((PATCH+1))"
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag $NEW
+          git push origin $NEW
+          echo "tag=$NEW" >> $GITHUB_OUTPUT
 
-      - name: Install npm deps
-        run: npm ci
+  build-windows:
+    needs: tag
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit
 
-      - name: Build Tauri
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build-macos:
+    needs: tag
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit
+
+  build-linux:
+    needs: tag
+    uses: ./.github/workflows/build-linux.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+    secrets: inherit

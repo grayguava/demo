@@ -23,7 +23,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis", "msi"],
-    "icon": ["icons/icon.ico"]
+    "icon": ["icons/icon.ico", "icons/icon.png"]
   },
   "plugins": {
     "dialog": {},

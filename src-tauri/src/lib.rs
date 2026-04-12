@@ -59,7 +59,7 @@ fn fetch_ciphertexts() -> Result<FetchResult, String> {
 
     let output_path = PathBuf::from(&cfg.output_folder).join("ciphertexts.jsonl");
 
-    let result = match cfg.provider.as_str() {
+    let (written, skipped) = match cfg.provider.as_str() {
         "cloudflare" => {
             if cfg.cloudflare.token.is_empty() {
                 return Err("Cloudflare token not set. Go to Settings.".to_string());
@@ -69,8 +69,9 @@ fn fetch_ciphertexts() -> Result<FetchResult, String> {
             }
             let account_id = providers::cloudflare::get_account_id(&cfg.cloudflare.token)
                 .map_err(|e| e.to_string())?;
-            providers::cloudflare::fetch(&cfg.cloudflare, &account_id, &output_path)
-                .map_err(|e: anyhow::Error| e.to_string())?
+            let r = providers::cloudflare::fetch(&cfg.cloudflare, &account_id, &output_path)
+                .map_err(|e: anyhow::Error| e.to_string())?;
+            (r.written, r.skipped)
         }
         "supabase" => {
             if cfg.supabase.url.is_empty() {
@@ -79,16 +80,14 @@ fn fetch_ciphertexts() -> Result<FetchResult, String> {
             if cfg.supabase.key.is_empty() {
                 return Err("Supabase key not set. Go to Settings.".to_string());
             }
-            providers::supabase::fetch(&cfg.supabase, &output_path)
-                .map_err(|e: anyhow::Error| e.to_string())?
+            let r = providers::supabase::fetch(&cfg.supabase, &output_path)
+                .map_err(|e: anyhow::Error| e.to_string())?;
+            (r.written, r.skipped)
         }
         _ => return Err("No provider set. Go to Settings.".to_string()),
     };
 
-    Ok(FetchResult {
-        written: result.written,
-        skipped: result.skipped,
-    })
+    Ok(FetchResult { written, skipped })
 }
 
 #[tauri::command]

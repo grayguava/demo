@@ -2,6 +2,7 @@ package dash
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"

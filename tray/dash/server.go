@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/grayguava/formseal-sync/tray/daemon"
 )
 
 var port = 3847
@@ -16,6 +18,7 @@ type Server struct {
 		Stop()
 		LastSyncTime() time.Time
 		GetConfig() interface{}
+		SetConfig(*daemon.Config)
 	}
 }
 
@@ -25,6 +28,7 @@ func New(svc interface {
 	Stop()
 	LastSyncTime() time.Time
 	GetConfig() interface{}
+	SetConfig(*daemon.Config)
 }) *Server {
 	return &Server{
 		addr: fmt.Sprintf(":%d", port),

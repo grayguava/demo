@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/grayguava/formseal-sync/tray/daemon"
-	ui "github.com/grayguava/formseal-sync/tray/dash/ui"
+	"github.com/grayguava/formseal-sync/tray/dash/ui"
 )
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {

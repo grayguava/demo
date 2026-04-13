@@ -11,7 +11,7 @@ func main() {
 func onReady() {
 	systray.SetIcon(icon)
 	systray.SetTitle("formseal-sync")
-	systray.SetTooltip("formseal-sync")
+	systray.SetTooltip("FormSeal-Sync")
 
 	mStatus := systray.AddMenuItem("Status: checking...", "")
 	mStatus.Disable()
@@ -22,7 +22,7 @@ func onReady() {
 	mStop.Disable()
 	systray.AddSeparator()
 
-	mConfigure := systray.AddMenuItem("Configure...", "Open configuration")
+	mOpenCLI := systray.AddMenuItem("Open CLI Setup", "Run fsync setup quick")
 	systray.AddSeparator()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit formseal-sync")
@@ -41,8 +41,8 @@ func onReady() {
 				stopDaemon()
 				refreshStatus(mStatus, mStart, mStop)
 
-			case <-mConfigure.ClickedCh:
-				openConfigWindow()
+			case <-mOpenCLI.ClickedCh:
+				openCLI()
 
 			case <-mQuit.ClickedCh:
 				systray.Quit()

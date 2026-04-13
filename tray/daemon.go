@@ -160,6 +160,10 @@ func showError(msg string) {
 	exec.Command("msg", "*", msg).Run()
 }
 
+func openCLI() {
+	exec.Command("cmd", "/c", "start", "cmd", "/k", "fsync setup quick").Start()
+}
+
 func log(msg string) {
 	os.MkdirAll(filepath.Dir(logFile), 0755)
 	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)

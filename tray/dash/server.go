@@ -17,7 +17,7 @@ type Server struct {
 		Start()
 		Stop()
 		LastSyncTime() time.Time
-		GetConfig() interface{}
+		GetConfig() *daemon.Config
 		SetConfig(*daemon.Config)
 	}
 }
@@ -27,7 +27,7 @@ func New(svc interface {
 	Start()
 	Stop()
 	LastSyncTime() time.Time
-	GetConfig() interface{}
+	GetConfig() *daemon.Config
 	SetConfig(*daemon.Config)
 }) *Server {
 	return &Server{

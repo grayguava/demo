@@ -22,7 +22,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 func handleStatus(svc interface {
 	IsRunning() bool
 	LastSyncTime() time.Time
-	GetConfig() interface{}
+	GetConfig() *daemon.Config
 }) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cfg, _ := daemon.LoadConfig()
@@ -88,7 +88,7 @@ func handleStop(svc interface {
 
 func handleSave(svc interface {
 	SetConfig(*daemon.Config)
-	GetConfig() interface{}
+	GetConfig() *daemon.Config
 }) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var cfg daemon.Config

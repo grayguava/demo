@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/getlantern/systray"
@@ -48,11 +48,13 @@ func onReady() {
 		for {
 			if svc.IsRunning() {
 				mStatus.SetTitle("Status: Running")
+				mStart.Disable()
+				mStop.Enable()
 			} else {
 				mStatus.SetTitle("Status: Idle")
+				mStart.Enable()
+				mStop.Disable()
 			}
-			mStart.SetEnabled(!svc.IsRunning())
-			mStop.SetEnabled(svc.IsRunning())
 			time.Sleep(2 * time.Second)
 		}
 	}()

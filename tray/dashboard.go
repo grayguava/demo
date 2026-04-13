@@ -37,26 +37,14 @@ func runDashboardServer() {
 	http.HandleFunc("/api/stop", handleStop)
 	http.HandleFunc("/api/config", handleConfig)
 
-	// Create log file
-	logFilePath := filepath.Join(homeDir(), ".formsealdaemon", "dashboard.log")
-	os.MkdirAll(filepath.Dir(logFilePath), 0755)
-	logFile, _ := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	defer logFile.Close()
+	log("Dashboard server starting on port " + strconv.Itoa(dashboardPort))
 
 	server := &http.Server{Addr: ":" + strconv.Itoa(dashboardPort)}
 	server.SetKeepAlivesEnabled(false)
 
-	// Log startup
-	logFile.WriteString(fmt.Sprintf("[%s] Dashboard started on port %d\n", timestamp(), dashboardPort))
-
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logFile.WriteString(fmt.Sprintf("[%s] Dashboard error: %v\n", timestamp(), err))
+		log("Dashboard server error: " + err.Error())
 	}
-}
-
-func timestamp() string {
-	// Simple timestamp
-	return "2026-01-01 00:00:00"
 }
 
 func handleDashboard(w http.ResponseWriter, r *http.Request) {

@@ -167,17 +167,5 @@ func log(msg string) {
 		return
 	}
 	defer f.Close()
-	f.WriteString("[" + timestamp() + "] " + msg + "\n")
-}
-
-func timestamp() string {
-	return "2026-01-01 00:00:00"
-}
-
-func sleep(seconds int) {
-	// Simple busy wait (not ideal but simple)
-	end := 0
-	for i := 0; i < seconds*100000000; i++ {
-		end++
-	}
+	f.WriteString(msg + "\n")
 }

@@ -38,7 +38,9 @@ jobs:
           echo "GOARCH=$GOARCH"
 
       - name: Download dependencies
-        run: go mod download
+        run: |
+          go mod tidy
+          go mod download
         working-directory: .
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

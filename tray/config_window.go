@@ -18,7 +18,6 @@ func openConfigWindow() {
 	if interval == 0 {
 		interval = 15
 	}
-	intervalStr := fmt.Sprintf("%d", interval)
 
 	html := `<!DOCTYPE html>
 <html>
@@ -69,7 +68,7 @@ func openConfigWindow() {
 	<input type="text" id="output_folder" value="` + cfg.OutputFolder + `" placeholder="D:/Documents/FormData">
 
 	<label>Sync Interval (minutes)</label>
-	<input type="number" id="sync_interval" value="` + itoa(interval) + `" min="1" max="1440">
+	<input type="number" id="sync_interval" value="` + fmt.Sprintf("%d", interval) + `" min="1" max="1440">
 
 	<button onclick="save()">Save</button>
 	<button class="secondary" onclick="openCLI()">Open CLI Setup</button>

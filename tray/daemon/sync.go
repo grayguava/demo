@@ -2,7 +2,6 @@ package daemon
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,7 +11,7 @@ import (
 )
 
 var (
-	logFile = filepath.Join(userHome(), ".formsealdaemon", "sync.log")
+	syncLogFile = filepath.Join(userHome(), ".formsealdaemon", "sync.syncLog")
 )
 
 type SyncService struct {
@@ -53,7 +52,7 @@ func (s *SyncService) Start() {
 	s.mu.Unlock()
 
 	go s.runLoop()
-	log("INFO: Sync started")
+	syncLog("INFO: Sync started")
 }
 
 func (s *SyncService) Stop() {
@@ -64,7 +63,7 @@ func (s *SyncService) Stop() {
 	}
 	s.running = false
 	close(s.stopCh)
-	log("INFO: Sync stopped")
+	syncLog("INFO: Sync stopped")
 }
 
 func (s *SyncService) IsRunning() bool {
@@ -95,13 +94,13 @@ func (s *SyncService) syncOnce() {
 	s.mu.RUnlock()
 
 	if cfg.Provider == "" {
-		log("WARN: No provider configured")
+		syncLog("WARN: No provider configured")
 		return
 	}
 
 	provider := providers.Get(cfg.Provider)
 	if provider == nil {
-		log("ERROR: Unknown provider: " + cfg.Provider)
+		syncLog("ERROR: Unknown provider: " + cfg.Provider)
 		return
 	}
 
@@ -119,7 +118,7 @@ func (s *SyncService) syncOnce() {
 
 	written, skipped, err := provider.Fetch(pCfg, outputPath)
 	if err != nil {
-		log("ERROR: Fetch failed: " + err.Error())
+		syncLog("ERROR: Fetch failed: " + err.Error())
 		return
 	}
 
@@ -127,7 +126,7 @@ func (s *SyncService) syncOnce() {
 	s.lastSync = time.Now()
 	s.mu.Unlock()
 
-	log(fmt.Sprintf("INFO: Synced %d new, %d skipped", written, skipped))
+	syncLog(fmt.Sprintf("INFO: Synced %d new, %d skipped", written, skipped))
 }
 
 func (s *SyncService) LastSyncTime() time.Time {
@@ -136,9 +135,9 @@ func (s *SyncService) LastSyncTime() time.Time {
 	return s.lastSync
 }
 
-func log(msg string) {
-	os.MkdirAll(filepath.Dir(logFile), 0755)
-	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func syncLog(msg string) {
+	os.MkdirAll(filepath.Dir(syncLogFile), 0755)
+	f, err := os.OpenFile(syncLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}

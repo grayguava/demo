@@ -1,0 +1,103 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Version bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          LATEST=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+          if [ -z "$LATEST" ]; then
+            LATEST="v0.0.0"
+          fi
+          CURRENT="${LATEST#v}"
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+
+          case "${{ github.event.inputs.bump }}" in
+            major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+            minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+            patch) PATCH=$((PATCH + 1)) ;;
+          esac
+
+          NEXT="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "tag=${NEXT}" >> $GITHUB_OUTPUT
+          echo "version=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+
+      - name: Check tag doesn't already exist
+        run: |
+          TAG=${{ steps.version.outputs.tag }}
+          if git tag | grep -q "^${TAG}$"; then
+            echo "Tag ${TAG} already exists. Aborting."
+            exit 1
+          fi
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build Windows
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o formseal-sync.exe ./tray
+
+      - name: Build macOS
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o formseal-sync-darwin ./tray
+
+      - name: Build Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o formseal-sync-linux ./tray
+
+      - name: Tag release
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "${{ steps.version.outputs.tag }}"
+          draft: true
+          files: |
+            formseal-sync.exe
+            formseal-sync-darwin
+            formseal-sync-linux
+          body: |
+            Windows, macOS, and Linux binaries for FormSeal-Sync systray application.
+            
+            ## Usage
+            1. Run `formseal-sync.exe` to start the system tray application
+            2. Right-click the tray icon to access menu
+            3. Configure using the CLI: `npm install -g @formseal/sync` then `fsync setup quick`
+            
+            ## Requirements
+            - Python 3.8+ must be installed
+            - Set `FSYNC_CF_TOKEN` or `FSYNC_SU_KEY` environment variables

@@ -1,9 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"os/exec"
 	"time"
 
 	"github.com/getlantern/systray"
+
+	"github.com/grayguava/formseal-sync/tray/daemon"
+	"github.com/grayguava/formseal-sync/tray/dash"
 )
 
 func main() {
@@ -15,35 +21,53 @@ func onReady() {
 	systray.SetTitle("formseal-sync")
 	systray.SetTooltip("FormSeal-Sync")
 
+	svc := daemon.NewSyncService()
+
 	mStatus := systray.AddMenuItem("Status: Idle", "")
 	mStatus.Disable()
 	systray.AddSeparator()
 
-	mOpen := systray.AddMenuItem("Open Dashboard", "Open browser-based dashboard")
+	mStart := systray.AddMenuItem("Start Sync", "Start the sync service")
+	mStop := systray.AddMenuItem("Stop Sync", "Stop the sync service")
+	mStop.Disable()
+	systray.AddSeparator()
+
+	mDash := systray.AddMenuItem("Open Dashboard", "Open browser dashboard")
 	systray.AddSeparator()
 
 	mQuit := systray.AddMenuItem("Quit", "Quit formseal-sync")
 
-	// Status update loop - runs every 2 seconds
+	go func() {
+		server := dash.New(svc)
+		if err := server.Start(); err != nil {
+			log.Printf("Dashboard server error: %v", err)
+		}
+	}()
+
 	go func() {
 		for {
-			running, pid := isRunning()
-			if running {
-				mStatus.SetTitle("Status: Running (PID " + itoa(pid) + ")")
+			if svc.IsRunning() {
+				mStatus.SetTitle("Status: Running")
 			} else {
 				mStatus.SetTitle("Status: Idle")
 			}
+			mStart.SetEnabled(!svc.IsRunning())
+			mStop.SetEnabled(svc.IsRunning())
 			time.Sleep(2 * time.Second)
 		}
 	}()
 
-	// Menu event handler
 	go func() {
 		for {
 			select {
-			case <-mOpen.ClickedCh:
+			case <-mStart.ClickedCh:
+				svc.Start()
+			case <-mStop.ClickedCh:
+				svc.Stop()
+			case <-mDash.ClickedCh:
 				openDashboard()
 			case <-mQuit.ClickedCh:
+				svc.Stop()
 				systray.Quit()
 			}
 		}
@@ -52,14 +76,9 @@ func onReady() {
 
 func onExit() {}
 
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	result := ""
-	for n > 0 {
-		result = string(rune('0'+n%10)) + result
-		n /= 10
-	}
-	return result
+func openDashboard() {
+	time.Sleep(500 * time.Millisecond)
+	exec.Command("cmd", "/c", "start", "http://localhost:3847").Start()
 }
+
+var _ = filepath.Join // suppress unused

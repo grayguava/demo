@@ -22,9 +22,7 @@ func onReady() {
 	mStop.Disable()
 	systray.AddSeparator()
 
-	mOpenCLI := systray.AddMenuItem("Open CLI Setup", "Run fsync setup quick")
-	systray.AddSeparator()
-
+	mConfig := systray.AddMenuItem("Configure...", "Open configuration window")
 	mQuit := systray.AddMenuItem("Quit", "Quit formseal-sync")
 
 	// Initial status refresh
@@ -41,8 +39,8 @@ func onReady() {
 				stopDaemon()
 				refreshStatus(mStatus, mStart, mStop)
 
-			case <-mOpenCLI.ClickedCh:
-				openCLI()
+			case <-mConfig.ClickedCh:
+				openConfigWindow()
 
 			case <-mQuit.ClickedCh:
 				systray.Quit()

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func openConfigWindow() {
@@ -23,95 +24,104 @@ func openConfigWindow() {
 <html>
 <head>
 	<meta charset="UTF-8">
-	<title>FormSeal-Sync Configuration</title>
+	<title>FormSeal-Sync Settings</title>
 	<style>
-		body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; background: #1e293b; color: #e2e8f0; }
-		h1 { color: #f97316; margin-bottom: 20px; }
-		label { display: block; margin: 15px 0 5px; font-weight: 500; }
-		input, select { width: 100%; padding: 10px; margin-top: 5px; background: #334155; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; box-sizing: border-box; }
-		button { background: #f97316; color: white; border: none; padding: 12px 24px; margin-top: 20px; margin-right: 10px; cursor: pointer; border-radius: 6px; font-weight: bold; }
+		* { box-sizing: border-box; margin: 0; padding: 0; }
+		body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1e293b; color: #e2e8f0; min-height: 100vh; }
+		.container { max-width: 500px; margin: 0 auto; padding: 30px 20px; }
+		h1 { color: #f97316; margin-bottom: 25px; font-size: 24px; }
+		h2 { color: #94a3b8; margin: 20px 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+		label { display: block; margin: 12px 0 6px; font-weight: 500; font-size: 14px; }
+		input, select { width: 100%; padding: 12px; margin-top: 4px; background: #334155; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; font-size: 14px; }
+		input:focus, select:focus { outline: none; border-color: #f97316; }
+		button { background: #f97316; color: white; border: none; padding: 14px 24px; margin: 10px 10px 0 0; cursor: pointer; border-radius: 6px; font-weight: bold; font-size: 14px; }
 		button:hover { background: #ea580c; }
 		button.secondary { background: #475569; }
 		button.secondary:hover { background: #64748b; }
-		.note { font-size: 12px; color: #94a3b8; margin-top: 5px; }
-		.hidden { display: none; }
-		.error { color: #ef4444; font-size: 12px; margin-top: 5px; }
+		button.green { background: #22c55e; }
+		button.green:hover { background: #16a34a; }
+		.note { font-size: 12px; color: #94a3b8; margin-top: 6px; }
+		.error { color: #ef4444; font-size: 13px; margin-top: 12px; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 6px; }
+		.success { color: #22c55e; font-size: 13px; margin-top: 12px; padding: 10px; background: rgba(34,197,94,0.1); border-radius: 6px; }
+		.section { background: #334155; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+		.status { background: #0f172a; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
 	</style>
 </head>
 <body>
-	<h1>FormSeal-Sync Configuration</h1>
-	
-	<label>Provider</label>
-	<select id="provider" onchange="toggleFields()">
-		<option value="">Select provider...</option>
-		<option value="cloudflare"` + selected(cfg.Provider, "cloudflare") + `>Cloudflare KV</option>
-		<option value="supabase"` + selected(cfg.Provider, "supabase") + `>Supabase</option>
-	</select>
+	<div class="container">
+		<h1>FormSeal-Sync Settings</h1>
+		
+		<div class="section">
+			<h2>Quick Actions</h2>
+			<button class="green" onclick="runCmd('start')">Start Sync</button>
+			<button class="secondary" onclick="runCmd('stop')">Stop Sync</button>
+			<button class="secondary" onclick="runCmd('status')">Check Status</button>
+		</div>
 
-	<div id="cloudflare-fields" class="` + visible(cfg.Provider, "cloudflare") + `">
-		<label>Namespace ID</label>
-		<input type="text" id="cloudflare_namespace" value="` + cfg.CloudflareNS + `" placeholder="KV Namespace ID">
-		<div class="note">Set FSYNC_CF_TOKEN environment variable</div>
+		<div class="section">
+			<h2>Configuration</h2>
+			<button onclick="runCmd('setup')">Run Setup Wizard</button>
+			<button class="secondary" onclick="runCmd('help')">View Help</button>
+		</div>
+
+		<div class="section">
+			<h2>Current Config</h2>
+			<div class="status" id="config-display">` + formatConfig(cfg) + `</div>
+		</div>
+
+		<div id="message"></div>
+
+		<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #475569;">
+			<div class="note">
+				<strong>Environment Variables:</strong><br>
+				FSYNC_CF_TOKEN - Cloudflare API token<br>
+				FSYNC_SU_KEY - Supabase service key<br>
+				<br>
+				<strong>Config Location:</strong><br>
+				` + configFile + `
+			</div>
+		</div>
 	</div>
-
-	<div id="supabase-fields" class="` + visible(cfg.Provider, "supabase") + `">
-		<label>Project URL</label>
-		<input type="text" id="supabase_url" value="` + cfg.SupabaseURL + `" placeholder="https://xxx.supabase.co">
-		<label>Table Name</label>
-		<input type="text" id="supabase_table" value="` + cfg.SupabaseTable + `" placeholder="ciphertexts">
-		<div class="note">Set FSYNC_SU_KEY environment variable</div>
-	</div>
-
-	<div class="error" id="error"></div>
-
-	<label>Output Folder</label>
-	<input type="text" id="output_folder" value="` + cfg.OutputFolder + `" placeholder="D:/Documents/FormData">
-
-	<label>Sync Interval (minutes)</label>
-	<input type="number" id="sync_interval" value="` + fmt.Sprintf("%d", interval) + `" min="1" max="1440">
-
-	<button onclick="save()">Save</button>
-	<button class="secondary" onclick="openCLI()">Open CLI Setup</button>
 
 	<script>
-		function toggleFields() {
-			var p = document.getElementById('provider').value;
-			document.getElementById('cloudflare-fields').style.display = p === 'cloudflare' ? 'block' : 'none';
-			document.getElementById('supabase-fields').style.display = p === 'supabase' ? 'block' : 'none';
+		function showMessage(msg, isError) {
+			var el = document.getElementById('message');
+			el.className = isError ? 'error' : 'success';
+			el.textContent = msg;
+			setTimeout(function() { el.textContent = ''; }, 5000);
 		}
-		toggleFields();
 
-		function selected(a, b) { return a === b ? ' selected' : ''; }
-		function visible(a, b) { return a === b ? '' : 'hidden'; }
-		function itoa(n) { return '' + n; }
-
-		function save() {
-			var data = {
-				provider: document.getElementById('provider').value,
-				"cloudflare.namespace": document.getElementById('cloudflare_namespace').value,
-				"supabase.url": document.getElementById('supabase_url').value,
-				"supabase.table": document.getElementById('supabase_table').value,
-				output_folder: document.getElementById('output_folder').value,
-				sync_interval: parseInt(document.getElementById('sync_interval').value) || 15
-			};
-
-			if (!data.provider) {
-				document.getElementById('error').textContent = 'Please select a provider';
-				return;
+		function runCmd(action) {
+			var cmd, args;
+			
+			switch(action) {
+				case 'start':
+					cmd = 'fsync';
+					args = ['sync', 'start'];
+					break;
+				case 'stop':
+					cmd = 'fsync';
+					args = ['sync', 'stop'];
+					break;
+				case 'status':
+					cmd = 'fsync';
+					args = ['sync', 'status'];
+					break;
+				case 'setup':
+					cmd = 'fsync';
+					args = ['setup', 'quick'];
+					break;
+				case 'help':
+					cmd = 'fsync';
+					args = ['--help'];
+					break;
 			}
 
-			var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-			var url = URL.createObjectURL(blob);
-			var a = document.createElement('a');
-			a.href = url;
-			a.download = 'config.json';
-			a.click();
+			showMessage('Running: ' + cmd + ' ' + args.join(' '), false);
 
-			document.getElementById('error').textContent = 'Config downloaded. Move to %APPDATA%\\formseal-sync\\config.json and restart.';
-		}
-
-		function openCLI() {
-			window.location.href = 'formseal-sync:setup';
+			// Open a command prompt with the command pre-filled
+			var command = cmd + ' ' + args.join(' ');
+			window.location.href = 'cmd:' + command;
 		}
 	</script>
 </body>
@@ -123,6 +133,20 @@ func openConfigWindow() {
 	os.WriteFile(htmlPath, []byte(html), 0644)
 
 	exec.Command("cmd", "/c", "start", htmlPath).Start()
+}
+
+func formatConfig(cfg *Config) string {
+	var lines []string
+	lines = append(lines, "Provider: "+cfg.Provider)
+	if cfg.CloudflareNS != "" {
+		lines = append(lines, "Cloudflare Namespace: "+cfg.CloudflareNS)
+	}
+	if cfg.SupabaseURL != "" {
+		lines = append(lines, "Supabase URL: "+cfg.SupabaseURL)
+	}
+	lines = append(lines, "Output Folder: "+cfg.OutputFolder)
+	lines = append(lines, "Sync Interval: "+fmt.Sprintf("%d", cfg.SyncInterval)+" min")
+	return strings.Join(lines, "\n")
 }
 
 func selected(a, b string) string {

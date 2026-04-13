@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/getlantern/systray"
 )
 
@@ -22,7 +24,7 @@ func onReady() {
 
 	mQuit := systray.AddMenuItem("Quit", "Quit formseal-sync")
 
-	// Update status display
+	// Status update loop - runs every 2 seconds
 	go func() {
 		for {
 			running, pid := isRunning()
@@ -31,15 +33,18 @@ func onReady() {
 			} else {
 				mStatus.SetTitle("Status: Idle")
 			}
-			for i := 0; i < 60; i++ {
-				select {
-				case <-mOpen.ClickedCh:
-					openDashboard()
-				case <-mQuit.ClickedCh:
-					systray.Quit()
-				default:
-				}
-				sleepMs(1000)
+			time.Sleep(2 * time.Second)
+		}
+	}()
+
+	// Menu event handler
+	go func() {
+		for {
+			select {
+			case <-mOpen.ClickedCh:
+				openDashboard()
+			case <-mQuit.ClickedCh:
+				systray.Quit()
 			}
 		}
 	}()
@@ -57,12 +62,4 @@ func itoa(n int) string {
 		n /= 10
 	}
 	return result
-}
-
-func sleepMs(ms int) {
-	// Simple delay
-	end := 0
-	for i := 0; i < ms*1000; i++ {
-		end++
-	}
 }

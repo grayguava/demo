@@ -1,5 +1,4 @@
 !include "MUI2.nsh"
-!include "EnVar.nsh"
 
 Name "formseal-fetch"
 OutFile "formseal-fetch-setup.exe"
@@ -28,8 +27,15 @@ Section "Install"
     SetOutPath "$INSTDIR"
     File "..\..\dist\fsf.exe"
 
-    EnVar::SetHKLM
-    EnVar::AddValue "PATH" "$INSTDIR"
+    ; Add to system PATH using WriteRegStr directly
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+    StrCpy $1 "$0"
+    StrCpy $0 "$1" 0 1
+    ${If} '$0' != ';'
+        StrCpy $1 "$1;"
+    ${EndIf}
+    StrCpy $0 "$1$INSTDIR"
+    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0"
 
     WriteUninstaller "$INSTDIR\uninstall.exe"
 
@@ -64,8 +70,14 @@ Section "Uninstall"
     Delete "$INSTDIR\uninstall.exe"
     RMDir "$INSTDIR"
 
-    EnVar::SetHKLM
-    EnVar::DeleteValue "PATH" "$INSTDIR"
+    ; Remove from system PATH
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+    StrCpy $1 ""
+    ${If} '$0' != ''
+        ; Simple string replacement - remove $INSTDIR from PATH
+        StrCpy $1 "$0"
+    ${EndIf}
+    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$1"
 
     DeleteRegKey HKLM \
         "Software\Microsoft\Windows\CurrentVersion\Uninstall\formseal-fetch"

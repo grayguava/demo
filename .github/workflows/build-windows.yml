@@ -42,9 +42,11 @@ jobs:
           Invoke-WebRequest `
             -Uri "https://nsis.sourceforge.io/mediawiki/images/7/7f/EnVar_plugin.zip" `
             -OutFile EnVar.zip
-          Expand-Archive EnVar.zip -DestinationPath EnVar
+          Expand-Archive EnVar.zip -DestinationPath EnVar -Force
           Copy-Item "EnVar\Plugins\x86-unicode\EnVar.dll" `
             "C:\Program Files (x86)\NSIS\Plugins\x86-unicode\EnVar.dll"
+          Copy-Item "EnVar\Include\EnVar.nsh" `
+            "C:\Program Files (x86)\NSIS\Include\EnVar.nsh"
 
       - name: Patch version into installer script
         shell: pwsh

@@ -1,0 +1,77 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version string (e.g. 2.0.1)'
+        required: true
+      upload_url:
+        description: 'Release upload URL'
+        required: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ inputs.version }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build binary
+        run: pyinstaller fsf.spec
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Install EnVar NSIS plugin
+        shell: pwsh
+        run: |
+          Invoke-WebRequest `
+            -Uri "https://nsis.sourceforge.io/mediawiki/images/7/7f/EnVar_plugin.zip" `
+            -OutFile EnVar.zip
+          Expand-Archive EnVar.zip -DestinationPath EnVar
+          Copy-Item "EnVar\Plugins\x86-unicode\EnVar.dll" `
+            "C:\Program Files (x86)\NSIS\Plugins\x86-unicode\EnVar.dll"
+
+      - name: Patch version into installer script
+        shell: pwsh
+        run: |
+          (Get-Content installer\windows\installer.nsi) `
+            -replace 'INSTALLER_VERSION', '${{ inputs.version }}' |
+            Set-Content installer\windows\installer.nsi
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          cd installer\windows
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+
+      - name: Rename artifact
+        shell: pwsh
+        run: |
+          Rename-Item `
+            "installer\windows\formseal-fetch-setup.exe" `
+            "formseal-fetch-v${{ inputs.version }}-windows-setup.exe"
+
+      - name: Upload to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ inputs.upload_url }}
+          asset_path: formseal-fetch-v${{ inputs.version }}-windows-setup.exe
+          asset_name: formseal-fetch-v${{ inputs.version }}-windows-setup.exe
+          asset_content_type: application/octet-stream

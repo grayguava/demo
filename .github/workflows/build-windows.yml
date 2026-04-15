@@ -39,14 +39,19 @@ jobs:
       - name: Install EnVar NSIS plugin
         shell: pwsh
         run: |
+          # Download from GitHub releases (EnVar-Plugin.zip contains Include and Plugins folders)
           Invoke-WebRequest `
-            -Uri "https://nsis.sourceforge.io/mediawiki/images/7/7f/EnVar_plugin.zip" `
+            -Uri "https://github.com/GsNSIS/EnVar/releases/download/v0.3.1/EnVar-Plugin.zip" `
             -OutFile EnVar.zip
-          Expand-Archive EnVar.zip -DestinationPath EnVar -Force
-          Copy-Item "EnVar\Plugins\x86-unicode\EnVar.dll" `
-            "C:\Program Files (x86)\NSIS\Plugins\x86-unicode\EnVar.dll"
-          Copy-Item "EnVar\Include\EnVar.nsh" `
-            "C:\Program Files (x86)\NSIS\Include\EnVar.nsh"
+          Expand-Archive EnVar.zip -DestinationPath . -Force
+          # Copy all DLLs to NSIS plugins folder
+          Get-ChildItem . -Filter "*.dll" -Recurse | ForEach-Object {
+            Copy-Item $_.FullName "C:\Program Files (x86)\NSIS\Plugins\" -Force
+          }
+          # Copy NSH to include folder
+          Get-ChildItem . -Filter "*.nsh" -Recurse | ForEach-Object {
+            Copy-Item $_.FullName "C:\Program Files (x86)\NSIS\Include\" -Force
+          }
 
       - name: Patch version into installer script
         shell: pwsh

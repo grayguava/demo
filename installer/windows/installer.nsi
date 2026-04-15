@@ -13,7 +13,7 @@ RequestExecutionLevel admin
 !define MUI_FINISHPAGE_TEXT "formseal-fetch has been installed.$\r$\n$\r$\nOpen a new terminal window and type 'fsf status' to verify."
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "..\..\LICENSE.txt"
+!insertmacro MUI_PAGE_LICENSE "..\..\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH

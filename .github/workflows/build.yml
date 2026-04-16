@@ -30,7 +30,11 @@ jobs:
 
       - name: Build executable
         run: |
-          pyinstaller --onefile --name fsf --console cli/fsf.py
+          SEP=$([ "$RUNNER_OS" = "Windows" ] && echo ";" || echo ":")
+          pyinstaller --onefile --name fsf --console \
+            --paths . \
+            --add-data "version.txt${SEP}." \
+            cli/fsf.py
         shell: bash
 
       - name: Upload artifact

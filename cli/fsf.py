@@ -1,5 +1,4 @@
-# cli/fsf.py
-# Main entry point for formseal-fetch CLI
+# Main entry point
 
 import sys
 from pathlib import Path
@@ -11,6 +10,7 @@ from cli.commands.config import run_status, run_set, run_disconnect
 from cli.commands.setup import run as run_connect
 from cli.commands.fetch import run as run_fetch
 from cli.commands.providers import run as run_providers
+from cli.providers import get_providers
 
 
 def _load_version():
@@ -33,27 +33,33 @@ COMMANDS = {
 }
 
 
-HELP_GROUPS = {
-    "Connect": [
-        ("fsf connect provider:cloudflare", "connect to Cloudflare KV"),
-        ("fsf disconnect", "clear configuration"),
-    ],
-    "Fetch": [
-        ("fsf fetch", "download ciphertexts"),
-        ("fsf fetch --output <file>", "custom output path"),
-    ],
-    "Config": [
-        ("fsf status", "show configuration"),
-        ("fsf set <key> <value>", "set config value"),
-    ],
-    "Info": [
-        ("fsf providers", "list available providers"),
-        ("fsf --about", "show project info"),
-    ],
-    "Docs": [
-        ("https://github.com/formseal/formseal-fetch", None),
-    ],
-}
+def _get_help_groups():
+    providers = get_providers()
+    provider_list = ", ".join(p.display_name for p in providers.values())
+    return {
+        "Connect": [
+            ("fsf connect provider:<name>", "connect to a storage provider"),
+            ("fsf disconnect", "clear configuration"),
+        ],
+        "Fetch": [
+            ("fsf fetch", "download ciphertexts"),
+            ("fsf fetch --output <file>", "custom output path"),
+        ],
+        "Config": [
+            ("fsf status", "show configuration"),
+            ("fsf set <key> <value>", "set config value"),
+        ],
+        "Info": [
+            ("fsf providers", "list available providers"),
+            ("fsf --about", "show project info"),
+        ],
+        "Docs": [
+            ("https://github.com/formseal/formseal-fetch", None),
+        ],
+    }
+
+
+HELP_GROUPS = _get_help_groups()
 
 
 def _show_help():

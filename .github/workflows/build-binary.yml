@@ -1,0 +1,41 @@
+name: Build portable binary
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: fsf.exe
+          - os: macos-latest
+            artifact: fsf
+          - os: ubuntu-latest
+            artifact: fsf
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller keyring
+
+      - name: Build executable
+        run: |
+          pyinstaller --onefile --name fsf --console cli/fsf.py
+        shell: bash
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}

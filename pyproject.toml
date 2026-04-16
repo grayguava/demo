@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fsf"
-version = "2.0.0"
-description = "formseal-fetch - CLI tool for fetching encrypted form submissions"
+version = "2.1.0"
+description = "CLI tool for fetching encrypted form submissions"
 readme = "README.md"
-license = "MIT"
+license = {file = "LICENSE"}
 requires-python = ">=3.8"
 dependencies = [
     "keyring>=25.0",

@@ -1,14 +1,12 @@
-# cli/commands/config.py
-# Config management commands
+# Config management
 
 import json
 import sys
 from pathlib import Path
 
-from pathlib import Path
-
 from cli.ui import br, fail, ok, info, warn, G, W, D, C, Y, R
 from cli.security import tokens
+from cli.providers import get_provider, get_providers
 
 
 def _load_version():
@@ -23,15 +21,6 @@ VERSION = _load_version()
 
 CONFIG_DIR = Path.home() / ".config" / "formseal-fetch"
 CONFIG_FILE = CONFIG_DIR / "config.json"
-
-
-VALID_PROVIDERS = {
-    "cloudflare": {},
-}
-
-VALID_GLOBAL = {
-    "output_folder": "Output folder path",
-}
 
 
 def load_config():
@@ -62,10 +51,11 @@ def run_set(args):
     value = " ".join(args[1:])
 
     cfg = load_config()
+    providers = get_providers()
 
     if key == "provider":
-        if value not in VALID_PROVIDERS:
-            fail(f"Unknown provider: {value}\nValid: {', '.join(VALID_PROVIDERS.keys())}")
+        if value not in providers:
+            fail(f"Unknown provider: {value}\nValid: {', '.join(providers.keys())}")
         cfg["provider"] = value
         save_config(cfg)
         br()
@@ -73,7 +63,7 @@ def run_set(args):
         br()
         return
 
-    if key in VALID_GLOBAL:
+    if key == "output_folder":
         cfg[key] = value
         save_config(cfg)
         br()
@@ -95,49 +85,47 @@ def run_status():
     print(f"  {D}Configuration Status:{R}")
     br()
 
-    provider = cfg.get("provider")
-    if not provider:
-        warn("No provider configured. Run: fsf connect provider:cloudflare")
+    provider_name = cfg.get("provider")
+    if not provider_name:
+        warn("No provider configured. Run: fsf connect provider:<name>")
         br()
         return
+
+    provider = get_provider(provider_name)
 
     def row(label, value, color=W):
         print(f"  {D}{label:<26}{R}{color}{value}{R}")
 
-    row("Provider:", "Cloudflare")
+    row("Provider:", provider.display_name if provider else provider_name)
 
-    if provider == "cloudflare":
-        namespace = get_namespace(provider)
-        token = get_token(provider)
+    if provider:
+        for field in provider.get_config_fields():
+            key = field["key"]
+            value = tokens.load_namespace(provider_name)
+            row(f"{field.get('prompt', key)}:", value or "(not set)", W if value else D)
 
-        row("KV Namespace ID:", namespace or "(not set)", W if namespace else D)
-        if namespace:
-            row("NS-ID Location:", tokens.namespace_location(provider), G)
+        if value:
+            row("NS-ID Location:", tokens.namespace_location(provider_name), G)
 
+        token = get_token(provider_name)
         if token:
             try:
-                from cli.providers.cloudflare.account import get_account_id
-                account_id = get_account_id(token)
+                account_id = provider.authenticate(token)
                 partial = account_id[:12] + "..." if len(account_id) > 12 else account_id
                 row("Account ID:", partial, G)
             except Exception:
                 row("Account ID:", "(auth error)", R)
             row("API Token:", "****")
-            row("Token Location:", tokens.token_location(provider), G)
+            row("Token Location:", tokens.token_location(provider_name), G)
         else:
             row("API Token:", "(not set)", D)
             row("Token Location:", "Not set", D)
 
         br()
-        row("Server Storage Type:", "Key-Value")
-
-    else:
-        fail(f"Unknown provider: {provider}")
+        row("Server Storage Type:", provider.storage_type)
 
     output_folder = cfg.get("output_folder")
     row("Output Folder:", output_folder or "(not set)", W if output_folder else D)
-
-    br()
 
     br()
 
@@ -153,7 +141,7 @@ def run_config_show():
     provider = cfg.get("provider")
 
     if not cfg:
-        info("No config. Run: fsf connect provider:cloudflare")
+        info("No config. Run: fsf connect provider:<name>")
     else:
         for k, v in cfg.items():
             print(f"  {D}{k}:{R}  {W}{v}{R}")
@@ -194,5 +182,4 @@ def run_disconnect():
     br()
 
 
-# Alias for backward compatibility
 run_logout = run_disconnect

@@ -1,4 +1,3 @@
-# cli/providers/cloudflare/account.py
 # Cloudflare account authentication
 
 import json

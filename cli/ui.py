@@ -1,5 +1,4 @@
-# cli/ui.py
-# Terminal output primitives for fscl.
+# Terminal output primitives
 
 import os
 import sys
@@ -29,12 +28,11 @@ CYAN   = "\x1b[36m"
 WHITE  = "\x1b[37m"
 GRAY   = "\x1b[90m"
 
-# Orange accent
-O = "\x1b[38;5;208m"   # Orange
-S = "\x1b[38;5;112m"   # Seafoam
-G = "\x1b[38;5;244m"   # Gray
-C = "\x1b[38;5;117m"   # Light blue
-Y = "\x1b[38;5;103m"   # Yellow
+O = "\x1b[38;5;208m"   
+S = "\x1b[38;5;112m"  
+G = "\x1b[38;5;244m"  
+C = "\x1b[38;5;117m"  
+Y = "\x1b[38;5;103m" 
 W = WHITE + BOLD
 D = DIM
 R = RESET

@@ -1,31 +1,19 @@
-# cli/commands/setup.py
-# Interactive connect commands
+# Connect commands
 
 import sys
-import json
 from pathlib import Path
 
 from cli.ui import br, fail, ok, info, warn, G, W, D, C, Y, O, R
 from cli.commands.config import load_config, save_config
 from cli.security import tokens
-
-
-SETUP_SCHEMA = {
-    "cloudflare": {
-        "kv": {
-            "config_fields": [
-                {"key": "namespace", "prompt": "KV Namespace ID", "required": True},
-            ],
-        }
-    }
-}
+from cli.providers import get_providers
 
 
 def _parse_args(args):
     parsed = {}
     for arg in args:
         if ":" not in arg:
-            fail(f"Invalid format: {arg}\n           Use flag:value (e.g., provider:cloudflare)")
+            fail(f"Invalid format: {arg}\n           Use flag:value (e.g., provider:<name>)")
         key, value = arg.split(":", 1)
         parsed[key] = value
     return parsed
@@ -33,21 +21,22 @@ def _parse_args(args):
 
 def run(args):
     if not args:
-        fail("Usage: fsf connect provider:cloudflare [namespace:<id>] [output:<path>]")
+        fail("Usage: fsf connect provider:<name> [key:value ...]")
 
     parsed = _parse_args(args)
 
     if "provider" not in parsed:
-        fail("provider is required.\n           Usage: fsf connect provider:<cloudflare> [...]")
+        fail("provider is required.\n           Usage: fsf connect provider:<name> [...]")
 
     provider = parsed["provider"].lower()
-    if provider not in SETUP_SCHEMA:
+    providers = get_providers()
+    if provider not in providers:
         fail(f"Unknown provider: {provider}\n           Run fsf providers to see available.")
 
-    _setup_flow(provider, parsed)
+    _setup_flow(provider, parsed, providers[provider])
 
 
-def _setup_flow(provider, parsed):
+def _setup_flow(provider, parsed, provider_obj):
     print()
     print(f"{C} \u250c\u2500 {R}{W}formseal-fetch{R}  {G}setup{R}")
     print(G + " " + "\u2500" * 52 + R)
@@ -56,36 +45,35 @@ def _setup_flow(provider, parsed):
     cfg = load_config()
     cfg["provider"] = provider
 
-    # Get config fields from schema
-    fields = SETUP_SCHEMA[provider]["kv"]["config_fields"]
+    fields = provider_obj.get_config_fields()
 
-    # Ask for namespace if not provided
-    namespace = parsed.get("namespace")
-    if not namespace:
-        for field in fields:
-            prompt = field["prompt"]
+    for field in fields:
+        key = field["key"]
+        prompt = field.get("prompt", key)
+
+        value = parsed.get(key)
+        if not value:
             try:
                 sys.stdout.write(f"  {prompt}: ")
                 sys.stdout.flush()
-                namespace = input().strip()
+                value = input().strip()
             except KeyboardInterrupt:
                 br()
                 info("Cancelled.")
                 br()
                 return
-            if field.get("required") and not namespace:
-                fail(f"{prompt} is required")
-            break
 
-    if namespace:
-        tokens.save_namespace(provider, namespace)
+        if field.get("required") and not value:
+            fail(f"{prompt} is required")
 
-    # Ask for token
+        if value:
+            tokens.save_namespace(provider, value)
+
     if "token" in parsed:
         token = parsed["token"]
     else:
         try:
-            sys.stdout.write("  Account API Token: ")
+            sys.stdout.write("  API Token: ")
             sys.stdout.flush()
             token = sys.stdin.readline().strip()
         except KeyboardInterrupt:
@@ -94,15 +82,14 @@ def _setup_flow(provider, parsed):
             br()
             return
         if not token:
-            fail("Account API Token is required")
+            fail("API Token is required")
 
     token = "".join(c for c in token if c.isprintable()).strip()
     if not token:
-        fail("Account API Token is required")
+        fail("API Token is required")
 
     tokens.save_token(provider, token)
 
-    # Ask for output folder
     if "output" in parsed:
         output_folder = parsed["output"]
     else:
@@ -117,6 +104,7 @@ def _setup_flow(provider, parsed):
             info("Cancelled.")
             br()
             return
+
     cfg["output_folder"] = output_folder
     print()
 

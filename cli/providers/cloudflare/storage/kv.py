@@ -1,5 +1,4 @@
-# cli/providers/cloudflare/storage/kv.py
-# Cloudflare KV storage adapter
+# Cloudflare KV storage
 
 import json
 import urllib.request

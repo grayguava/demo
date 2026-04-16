@@ -1,5 +1,4 @@
-# cli/security/tokens.py
-# OS credential storage using keyring with JSON file fallback
+# Credential storage (keyring + JSON fallback)
 
 import json
 import base64
@@ -34,8 +33,6 @@ def _save_secrets(secrets: dict):
     _ensure_config_dir()
     SECRETS_FILE.write_text(json.dumps(secrets, indent=2))
 
-
-# ==================== API Token ====================
 
 def save_token(provider: str, token: str) -> bool:
     """Save API token to OS keyring. Falls back to JSON if keyring fails."""
@@ -85,8 +82,6 @@ def delete_token(provider: str):
     _save_secrets(secrets)
 
 
-# ==================== Namespace ID ====================
-
 def save_namespace(provider: str, namespace: str) -> bool:
     """Save KV namespace ID to OS keyring. Falls back to JSON."""
     if HAS_KEYRING:
@@ -134,8 +129,6 @@ def delete_namespace(provider: str):
     secrets.pop(f"{provider}:namespace", None)
     _save_secrets(secrets)
 
-
-# ==================== Helpers ====================
 
 def token_location(provider: str) -> str:
     """Check where token is stored."""

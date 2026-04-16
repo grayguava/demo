@@ -1,9 +1,9 @@
-# cli/commands/providers.py
-# List available providers
+# List providers
 
 from pathlib import Path
 
 from cli.ui import br, C, G, Y, W, D, R
+from cli.providers import get_providers
 
 
 def _load_version():
@@ -21,6 +21,8 @@ def run(args):
 
 
 def _list_providers():
+    providers = get_providers()
+
     br()
     print(f"{C} \u250c\u2500 {R}{W}formseal-fetch{R}  {Y}v{VERSION}{R}")
     print(G + " " + "\u2500" * 52 + R)
@@ -28,13 +30,8 @@ def _list_providers():
 
     print(f"  {G}Available providers:{R}")
     br()
-    print(f"    {W}> Cloudflare{R}   -  Cloudflare KV")
-    br()
-    print(f"    {W}> Supabase{R}     -  PostgreSQL DB (coming soon)")
-    br()
 
+    for name, provider in providers.items():
+        print(f"    {W}>{provider.display_name}{R}   -  {provider.storage_type}")
 
-def _help():
-    return [
-        ("fsf providers", "list available providers"),
-    ]
+    br()
